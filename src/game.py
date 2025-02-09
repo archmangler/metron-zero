@@ -312,51 +312,20 @@ class Game:
         self.screen.blit(pause_text, pause_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2)))
 
     def check_collisions(self):
-        # Check player collision with enemies
-        if not self.player.invulnerable:
-            enemy_hits = pygame.sprite.spritecollide(
-                self.player, 
-                self.enemies, 
-                False, 
-                pygame.sprite.collide_mask
-            )
-            
-            for enemy in enemy_hits:
-                if enemy.attack_cooldown <= 0:
-                    # Player takes damage
+        # Check player-enemy collisions
+        for enemy in self.enemies:
+            if pygame.sprite.collide_mask(self.player, enemy):
+                if not self.player.invulnerable:
                     self.player.health -= enemy.damage
-                    self.sound_manager.play_sound('player_hurt')
-                    
-                    # Apply knockback to player
-                    knockback_direction = pygame.math.Vector2(
-                        self.player.rect.centerx - enemy.rect.centerx,
-                        self.player.rect.centery - enemy.rect.centery
-                    )
-                    if knockback_direction.length() > 0:
-                        knockback_direction = knockback_direction.normalize()
-                        self.player.rect.x += knockback_direction.x * KNOCKBACK_FORCE
-                        self.player.rect.y += knockback_direction.y * KNOCKBACK_FORCE
-                    
-                    # Make player temporarily invulnerable
                     self.player.invulnerable = True
-                    enemy.attack_cooldown = 30  # Half second cooldown at 60 FPS
-                    
-                    # Create hit effect
-                    self.create_hit_effect(self.player.rect.center)
+                    self.particles.create_hit_effect(
+                        self.player.rect.centerx,
+                        self.player.rect.centery
+                    )
                     
                     # Check if player died
                     if self.player.health <= 0:
-                        self.state = 'menu'
-                        self.menu.show_game_over()
-                        return
-        
-        # Check NPC interaction range
-        for npc in self.npcs:
-            distance = math.sqrt(
-                (self.player.rect.centerx - npc.rect.centerx) ** 2 +
-                (self.player.rect.centery - npc.rect.centery) ** 2
-            )
-            npc.in_range = distance <= INTERACTION_RADIUS
+                        self.state = 'game_over'  # Just change the state instead of calling show_game_over
 
     def run(self):
         running = True
@@ -370,12 +339,22 @@ class Game:
                 self.update()
                 self.render()
             elif self.state == 'game_over':
-                running = self.handle_events()
-                self.ui.show_game_over()
+                # Handle game over events
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            self.setup_game()
+                            self.state = 'playing'
+                        elif event.key == pygame.K_ESCAPE:
+                            self.state = 'menu'
+                
+                # Draw game over screen
+                self.menu.draw(self.screen)
             
             # Maintain consistent frame rate
             self.clock.tick(FPS)
-            pygame.display.flip()
 
         pygame.quit()
         sys.exit()
