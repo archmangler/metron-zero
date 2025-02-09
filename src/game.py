@@ -3,6 +3,7 @@ import sys
 import os
 import math
 import random
+import importlib
 from config import *
 from .player import Player
 from .enemy import Enemy
@@ -18,6 +19,10 @@ from .quest import QuestManager
 from .ui import UI
 from .particles import ParticleSystem
 from .camera import Camera
+
+# Force reload the terrain module
+from . import terrain
+importlib.reload(terrain)
 
 class Game:
     def __init__(self):
@@ -49,7 +54,7 @@ class Game:
         self.backgrounds = self.load_backgrounds()
         
         # Initialize terrain
-        self.terrain_manager = TerrainManager(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.terrain_manager = terrain.TerrainManager()
         self.terrain_manager.generate_terrain()
         
         # Add terrain obstacles to obstacle group
@@ -101,18 +106,29 @@ class Game:
             }
 
     def setup_game(self):
-        # Create player with inventory
+        # Initialize game objects
         self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        self.player.inventory = Inventory()
-        self.all_sprites.add(self.player)
+        self.enemies = pygame.sprite.Group()
+        self.obstacles = pygame.sprite.Group()
+        self.particles = ParticleSystem()
         
-        # Create enemies
+        # Initialize camera
+        self.camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
+        
+        # Initialize terrain with explicit import
+        self.terrain_manager = terrain.TerrainManager()
+        
+        # Add terrain obstacles to game obstacles
+        self.obstacles.add(self.terrain_manager.obstacles)
+        
+        # Initialize UI
+        self.ui = UI(self)
+        
+        # Initialize score
+        self.score = 0
+        
+        # Spawn initial enemies
         self.spawn_enemies()
-        
-        # Create NPC
-        self.weapons_vendor = NPC(400, 300)
-        self.all_sprites.add(self.weapons_vendor)
-        self.npcs.add(self.weapons_vendor)
 
     def spawn_enemies(self):
         # Clear existing enemies
@@ -221,7 +237,7 @@ class Game:
         
         # Check game over condition
         if self.player.health <= 0:
-            self.menu.show_game_over()
+            self.state = 'game_over'
 
     def render(self):
         # Draw background
@@ -353,9 +369,13 @@ class Game:
                 running = self.handle_events()
                 self.update()
                 self.render()
+            elif self.state == 'game_over':
+                running = self.handle_events()
+                self.ui.show_game_over()
             
             # Maintain consistent frame rate
             self.clock.tick(FPS)
+            pygame.display.flip()
 
         pygame.quit()
         sys.exit()

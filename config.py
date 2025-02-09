@@ -70,7 +70,7 @@ INVULNERABILITY_FRAMES = 60
 KNOCKBACK_FORCE = 10
 
 # Terrain settings
-CHUNK_SIZE = 64
+CHUNK_SIZE = 128  # Size of terrain chunks in pixels
 TERRAIN_MOVEMENT_PENALTIES = {
     'sea': 0.5,
     'desert': 0.7,
