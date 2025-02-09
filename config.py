@@ -44,7 +44,7 @@ PLAYER_HEALTH = 100
 INTERACTION_RADIUS = 50
 
 # Enemy settings
-ENEMY_SPEED = 3
+ENEMY_SPEED = 2 
 ENEMY_SIZE = 64
 ENEMY_DETECTION_RADIUS = 200
 ENEMY_HEALTH = 50
@@ -77,6 +77,12 @@ TERRAIN_MOVEMENT_PENALTIES = {
     'hellscape': 1.0
 }
 
+# Map paths
+MAPS_DIR = os.path.join(IMAGES_DIR, 'maps')
+GRASS_MAP = os.path.join(MAPS_DIR, 'grass_map.png')
+DESERT_MAP = os.path.join(MAPS_DIR, 'desert_map.png')
+DUNGEON_MAP = os.path.join(MAPS_DIR, 'dungeon_map.png')
+
 # Make sure required directories exist
 os.makedirs(IMAGES_DIR, exist_ok=True)
 os.makedirs(SOUNDS_DIR, exist_ok=True)
@@ -89,9 +95,9 @@ def verify_assets():
         ENEMY1_SPRITE,
         ENEMY2_SPRITE,
         NPC_SPRITE,
-        SEA_SPRITE,
-        DESERT_SPRITE,
-        HELLSCAPE_SPRITE
+        GRASS_MAP,
+        DESERT_MAP,
+        DUNGEON_MAP
     ]
     
     missing_assets = []
