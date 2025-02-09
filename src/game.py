@@ -1,7 +1,7 @@
 import pygame
 import sys
 import os
-from ..config import *
+from config import *
 from .player import Player
 from .enemy import Enemy
 from .npc import NPC

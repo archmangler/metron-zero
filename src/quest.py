@@ -1,5 +1,5 @@
 from .inventory import InventoryItem
-from ..config import *
+from config import *
 
 class Quest:
     def __init__(self, quest_id, title, description, objectives, rewards):

@@ -1,5 +1,5 @@
 import pygame
-from ..config import *
+from config import *
 from .weapons import Weapon, WeaponManager
 from .inventory import Inventory
 import math

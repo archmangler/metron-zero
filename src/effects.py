@@ -1,6 +1,7 @@
 import pygame
 import random
-from ..config import *
+from config import *
+import os
 
 class ParticleEffect:
     def __init__(self, x, y, color, particle_count=10, lifetime=30):
@@ -43,7 +44,7 @@ class AnimationManager:
     def load_animations(self):
         # Player animations
         self.animations['player_walk'] = self.load_spritesheet(
-            ASSETS_DIR + 'knight.png',
+            os.path.join(IMAGES_DIR, 'knight.png'),
             frame_width=64,
             frame_height=64,
             frames=4
@@ -51,7 +52,7 @@ class AnimationManager:
         
         # Enemy animations
         self.animations['enemy_attack'] = self.load_spritesheet(
-            ASSETS_DIR + 'enemy-1.png',
+            os.path.join(IMAGES_DIR, 'enemy-1.png'),
             frame_width=64,
             frame_height=64,
             frames=4
@@ -69,5 +70,6 @@ class AnimationManager:
                 animation_frames.append(frame)
                 
             return animation_frames
-        except pygame.error:
+        except pygame.error as e:
+            print(f"Warning: Could not load spritesheet at {path}: {e}")
             return None 
