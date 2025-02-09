@@ -22,7 +22,8 @@ class Enemy(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks()
         
         # Combat
-        self.health = ENEMY_HEALTH
+        self.health = 100
+        self.max_health = 100
         self.damage = 10
         self.attack_cooldown = 0
         self.attack_range = 100
@@ -106,6 +107,6 @@ class Enemy(pygame.sprite.Sprite):
                         self.rect.top = obstacle.rect.bottom
     
     def take_damage(self, amount):
+        """Take damage and return True if enemy dies"""
         self.health -= amount
-        if self.health <= 0:
-            self.kill() 
+        return self.health <= 0 

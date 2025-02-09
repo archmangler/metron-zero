@@ -26,7 +26,12 @@ class Player(pygame.sprite.Sprite):
         self.health = PLAYER_HEALTH
         self.invulnerable = False
         self.invulnerable_timer = 0
-        self.attacking = False
+        self.is_attacking = False
+        self.attack_timer = 0
+        self.attack_duration = 200  # milliseconds
+        self.attack_damage = 25
+        self.attack_range = 50
+        self.direction = 'right'  # Default direction
         
         # Weapons
         self.weapons = []
@@ -41,66 +46,37 @@ class Player(pygame.sprite.Sprite):
         dt = current_time - self.last_update
         self.last_update = current_time
         
-        # Get input
+        # Get keyboard input
         keys = pygame.key.get_pressed()
+        dx = 0
+        dy = 0
         
-        # Reset velocity
-        self.velocity_x = 0
-        self.velocity_y = 0
-        is_moving = False
-        direction = self.animation.current_direction
-        
-        # Movement and direction
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            self.velocity_x = -self.speed
-            direction = 'left'
-            is_moving = True
+            dx = -self.speed
+            self.direction = 'left'
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            self.velocity_x = self.speed
-            direction = 'right'
-            is_moving = True
+            dx = self.speed
+            self.direction = 'right'
         if keys[pygame.K_UP] or keys[pygame.K_w]:
-            self.velocity_y = -self.speed
-            direction = 'up'
-            is_moving = True
+            dy = -self.speed
+            self.direction = 'up'
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            self.velocity_y = self.speed
-            direction = 'down'
-            is_moving = True
-            
-        # Attack input
-        if keys[pygame.K_SPACE]:
-            self.attacking = True
-        else:
-            self.attacking = False
+            dy = self.speed
+            self.direction = 'down'
         
-        # Update animation
-        self.animation.update(dt, direction, is_moving)
-        self.image = self.animation.get_current_frame()
+        # Apply movement
+        self.rect.x += dx
+        self.rect.y += dy
         
-        # Apply terrain movement penalty
-        current_terrain = terrain_manager.get_terrain_at_position(
-            self.rect.centerx, 
-            self.rect.centery
-        )
-        terrain_penalty = TERRAIN_MOVEMENT_PENALTIES.get(current_terrain, 1.0)
-        self.velocity_x *= terrain_penalty
-        self.velocity_y *= terrain_penalty
-        
-        # Move X
-        self.rect.x += self.velocity_x
-        self.handle_collision(obstacles, 'x')
-        
-        # Move Y
-        self.rect.y += self.velocity_y
-        self.handle_collision(obstacles, 'y')
+        # Update attack
+        if self.is_attacking:
+            if current_time - self.attack_timer > self.attack_duration:
+                self.is_attacking = False
         
         # Update invulnerability
         if self.invulnerable:
-            self.invulnerable_timer += 1
-            if self.invulnerable_timer >= INVULNERABILITY_FRAMES:
+            if current_time - self.invulnerable_timer > INVULNERABILITY_FRAMES:
                 self.invulnerable = False
-                self.invulnerable_timer = 0
         
         # Update attack cooldown
         if self.attack_cooldown > 0:
@@ -136,38 +112,28 @@ class Player(pygame.sprite.Sprite):
             self.facing_direction = pygame.math.Vector2(
                 self.velocity_x, self.velocity_y).normalize()
 
-    def attack(self, target_group):
-        if not self.current_weapon or not self.current_weapon.can_attack():
-            return
-        
-        # Calculate attack area based on facing direction and weapon range
-        attack_range = self.current_weapon.range
-        attack_point = (
-            self.rect.centerx + self.facing_direction.x * attack_range,
-            self.rect.centery + self.facing_direction.y * attack_range
-        )
-        
-        # Check for hits
-        for target in target_group:
-            distance = math.sqrt(
-                (target.rect.centerx - attack_point[0]) ** 2 +
-                (target.rect.centery - attack_point[1]) ** 2
-            )
-            
-            if distance <= attack_range:
-                self.apply_hit(target)
-        
-        # Start weapon cooldown
-        self.current_weapon.current_cooldown = self.current_weapon.cooldown
+    def attack(self):
+        if not self.is_attacking:
+            self.is_attacking = True
+            self.attack_timer = pygame.time.get_ticks()
 
-    def apply_hit(self, target):
-        # Apply damage and knockback
-        target.take_damage(self.current_weapon.damage)
+    def get_attack_rect(self):
+        """Get the rectangle representing the attack hitbox"""
+        attack_rect = self.rect.copy()
         
-        # Calculate knockback direction
-        knockback = self.facing_direction * KNOCKBACK_FORCE
-        target.rect.x += knockback.x
-        target.rect.y += knockback.y
+        # Extend the attack rect based on direction
+        if self.direction == 'right':
+            attack_rect.width += self.attack_range
+        elif self.direction == 'left':
+            attack_rect.x -= self.attack_range
+            attack_rect.width += self.attack_range
+        elif self.direction == 'up':
+            attack_rect.y -= self.attack_range
+            attack_rect.height += self.attack_range
+        elif self.direction == 'down':
+            attack_rect.height += self.attack_range
+        
+        return attack_rect
 
     @property
     def current_weapon(self):

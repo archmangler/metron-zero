@@ -28,9 +28,18 @@ class Game:
     def __init__(self):
         # Initialize Pygame
         pygame.init()
+        pygame.mixer.init()  # Initialize the audio system
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Metron-Zero")
         self.clock = pygame.time.Clock()
+        
+        # Load sound effects
+        try:
+            self.hit_sound = pygame.mixer.Sound("assets/sounds/hit.wav")
+            self.hit_sound.set_volume(0.3)  # Adjust volume as needed
+        except:
+            print("Warning: Could not load hit sound")
+            self.hit_sound = None
         
         # Initialize game systems
         self.animation_manager = AnimationManager()
@@ -146,12 +155,17 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
-            
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.state = 'menu'
-                elif event.key == pygame.K_t:  # Changed from 'r' to 't'
+                elif event.key == pygame.K_t:
                     self.ui.toggle_radar()
+                elif event.key == pygame.K_SPACE:
+                    if self.state == 'game_over':
+                        self.setup_game()
+                        self.state = 'playing'
+                    else:
+                        self.player.attack()  # Trigger attack on space
                 elif event.key == pygame.K_i:
                     if self.state == 'playing':
                         self.state = 'inventory'
@@ -162,10 +176,6 @@ class Game:
                 
                 elif event.key == pygame.K_e and self.state == 'playing':
                     self.player.interact(self.npcs)
-                
-                elif event.key == pygame.K_SPACE and self.state == 'game_over':
-                    self.setup_game()
-                    self.state = 'playing'
                 
                 # Quick save/load for testing
                 elif event.key == pygame.K_F5:
@@ -297,12 +307,18 @@ class Game:
         self.screen.blit(pause_text, pause_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2)))
 
     def check_collisions(self):
-        # Check player-enemy collisions
+        # Check player-enemy collisions for damage to player
         for enemy in self.enemies:
             if pygame.sprite.collide_mask(self.player, enemy):
                 if not self.player.invulnerable:
                     self.player.health -= enemy.damage
                     self.player.invulnerable = True
+                    
+                    # Play hit sound
+                    if self.hit_sound:
+                        self.hit_sound.play()
+                    
+                    # Create hit effect
                     self.particles.create_hit_effect(
                         self.player.rect.centerx,
                         self.player.rect.centery
@@ -310,7 +326,28 @@ class Game:
                     
                     # Check if player died
                     if self.player.health <= 0:
-                        self.state = 'game_over'  # Just change the state instead of calling show_game_over
+                        self.state = 'game_over'
+        
+        # Check player attack collisions with enemies
+        if self.player.is_attacking:
+            attack_rect = self.player.get_attack_rect()
+            for enemy in self.enemies:
+                if attack_rect.colliderect(enemy.rect):
+                    # Play hit sound
+                    if self.hit_sound:
+                        self.hit_sound.play()
+                    
+                    # Create hit effect
+                    self.particles.create_hit_effect(
+                        enemy.rect.centerx,
+                        enemy.rect.centery
+                    )
+                    
+                    # Damage and possibly kill enemy
+                    enemy.take_damage(self.player.attack_damage)
+                    if enemy.health <= 0:
+                        self.enemies.remove(enemy)
+                        self.score += 100  # Add score for killing enemy
 
     def run(self):
         running = True
