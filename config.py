@@ -25,6 +25,11 @@ ENEMY1_SPRITE = os.path.join(IMAGES_DIR, 'enemy-1.png')
 ENEMY2_SPRITE = os.path.join(IMAGES_DIR, 'enemy-2.png')
 NPC_SPRITE = os.path.join(IMAGES_DIR, 'civilian-1.png')
 
+# Terrain sprites
+SEA_SPRITE = os.path.join(IMAGES_DIR, 'sea.png')
+DESERT_SPRITE = os.path.join(IMAGES_DIR, 'desert.png')
+HELLSCAPE_SPRITE = os.path.join(IMAGES_DIR, 'hellscape.png')
+
 # Sound paths
 SWORD_SWING_SOUND = os.path.join(SOUNDS_DIR, 'sword_swing.wav')
 HIT_SOUND = os.path.join(SOUNDS_DIR, 'hit.wav')
@@ -61,15 +66,46 @@ WEAPON_COOLDOWN = 30
 DEFAULT_WEAPON_RANGE = 50
 
 # Combat settings
-INVULNERABILITY_FRAMES = 30
+INVULNERABILITY_FRAMES = 60
 KNOCKBACK_FORCE = 10
 
 # Terrain settings
-CHUNK_SIZE = 200
+CHUNK_SIZE = 64
 TERRAIN_MOVEMENT_PENALTIES = {
     'sea': 0.5,
     'desert': 0.7,
     'hellscape': 1.0
 }
+
+# Make sure required directories exist
+os.makedirs(IMAGES_DIR, exist_ok=True)
+os.makedirs(SOUNDS_DIR, exist_ok=True)
+os.makedirs(SAVES_DIR, exist_ok=True)
+
+# Verify assets exist
+def verify_assets():
+    required_images = [
+        PLAYER_SPRITE,
+        ENEMY1_SPRITE,
+        ENEMY2_SPRITE,
+        NPC_SPRITE,
+        SEA_SPRITE,
+        DESERT_SPRITE,
+        HELLSCAPE_SPRITE
+    ]
+    
+    missing_assets = []
+    for image_path in required_images:
+        if not os.path.exists(image_path):
+            missing_assets.append(os.path.basename(image_path))
+    
+    if missing_assets:
+        print("Warning: Missing game assets:", missing_assets)
+        print("Using placeholder images instead.")
+        return False
+    return True
+
+# Run asset verification
+USING_REAL_ASSETS = verify_assets()
 
 # ... (rest of the config settings remain the same) ... 
