@@ -1,6 +1,11 @@
 # Metron-Zero
 
-A 2D RPG game built with Pygame featuring dynamic combat, inventory system, and quest management.
+* A 2D RPG game built with Pygame featuring dynamic combat, inventory system, and quest management.
+* Developed on Mac OSX for Mac OSX
+
+![screenshot](media/game-map.png)
+![screenshot](media/start-game.png)
+![screenshot](media/vicotry.png)
 
 ## Features
 
@@ -17,21 +22,13 @@ A 2D RPG game built with Pygame featuring dynamic combat, inventory system, and 
 1. Clone the repository
 
 ```
+git clone https://github.com/archmangler/metron-zero.git
 ```
 
-2. Install requirements:
-
-
-```
-pip install -r requirements.txt
+2. Run the game from the shell
 
 ```
-
-
-3. Run the game:
-
-```
-python main.py
+./load.sh
 ```
 
 ## Controls
@@ -45,8 +42,6 @@ python main.py
 - F9: Quick load
 
 ## Project Structure
-
-
 
 ├── assets/          # Game assets (images, sounds)
 ├── assets/ # Game assets (images, sounds)
