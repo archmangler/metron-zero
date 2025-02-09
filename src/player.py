@@ -6,8 +6,9 @@ import math
 from .animation import DirectionalAnimation
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, game):
         super().__init__()
+        self.game = game  # Store reference to game
         # Initialize directional animation
         self.animation = DirectionalAnimation()
         self.image = self.animation.get_current_frame()
@@ -22,10 +23,14 @@ class Player(pygame.sprite.Sprite):
         self.velocity_y = 0
         self.last_update = pygame.time.get_ticks()
         
-        # Combat
-        self.health = PLAYER_HEALTH
+        # Health properties
+        self.max_health = 100
+        self.health = self.max_health
         self.invulnerable = False
         self.invulnerable_timer = 0
+        self.invulnerable_duration = 1000  # milliseconds
+        
+        # Attack properties
         self.is_attacking = False
         self.attack_timer = 0
         self.attack_duration = 200  # milliseconds
@@ -97,14 +102,14 @@ class Player(pygame.sprite.Sprite):
                         self.rect.top = obstacle.rect.bottom
 
     def interact(self, npcs):
-        # Check for nearby NPCs to interact with
+        """Check for and handle NPC interactions"""
+        # Check collision with NPCs
         for npc in npcs:
-            distance = math.sqrt(
-                (self.rect.centerx - npc.rect.centerx) ** 2 +
-                (self.rect.centery - npc.rect.centery) ** 2
-            )
-            if distance <= INTERACTION_RADIUS:
-                npc.interact(self)
+            if self.rect.colliderect(npc.rect):
+                # Get keyboard input
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_e]:  # Press E to interact
+                    npc.interact(self)
 
     def update_facing_direction(self):
         # Update facing direction based on movement

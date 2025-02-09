@@ -25,6 +25,10 @@ class NPC(pygame.sprite.Sprite):  # Make sure the class is named NPC, not npc
         self.rect.x = x
         self.rect.y = y
         
+        # Interaction cooldown
+        self.last_interaction = 0
+        self.interaction_cooldown = 1000  # 1 second cooldown
+        
         # Set NPC properties based on type
         if npc_type == 'merchant':
             self.interaction_text = "Press E to trade"
@@ -63,15 +67,33 @@ class NPC(pygame.sprite.Sprite):  # Make sure the class is named NPC, not npc
 
     def interact(self, player):
         """Handle player interaction based on NPC type"""
+        current_time = pygame.time.get_ticks()
+        
+        # Check cooldown
+        if current_time - self.last_interaction < self.interaction_cooldown:
+            return
+        
+        self.last_interaction = current_time
+        
         if self.npc_type == 'merchant':
+            print("Trading with merchant...")  # Debug output
             # TODO: Open trade menu
-            pass
+            player.game.ui.show_message("Welcome to my shop!")
+        
         elif self.npc_type == 'healer':
-            # Heal player
-            player.health = min(player.health + 50, player.max_health)
+            if player.health < player.max_health:
+                heal_amount = 50
+                old_health = player.health
+                player.health = min(player.health + heal_amount, player.max_health)
+                actual_heal = player.health - old_health
+                print(f"Healed player for {actual_heal} health")  # Debug output
+                player.game.ui.show_message(f"Healed for {actual_heal} health!")
+            else:
+                player.game.ui.show_message("You are already at full health!")
+        
         elif self.npc_type == 'quest_giver':
-            # TODO: Open quest dialog
-            pass
+            print("Getting quest...")  # Debug output
+            player.game.ui.show_message("Here's a quest for you!")
 
     def update(self):
         # NPCs don't move, but could have idle animations

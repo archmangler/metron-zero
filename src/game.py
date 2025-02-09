@@ -116,7 +116,7 @@ class Game:
 
     def setup_game(self):
         # Initialize game objects
-        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+        self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, self)
         self.enemies = pygame.sprite.Group()
         self.npcs = pygame.sprite.Group()
         self.obstacles = pygame.sprite.Group()
@@ -253,6 +253,13 @@ class Game:
         if self.state == 'playing':
             # Update player
             self.player.update(self.terrain_manager, self.obstacles)
+            
+            # Handle NPC interactions
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_e]:  # E key for interaction
+                for npc in self.npcs:
+                    if pygame.sprite.collide_rect(self.player, npc):
+                        npc.interact(self.player)
             
             # Update enemies
             for enemy in self.enemies:
