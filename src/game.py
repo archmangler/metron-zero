@@ -332,17 +332,17 @@ class Game:
     def run(self):
         running = True
         while running:
-            self.clock.tick(FPS)
-            
+            # Handle events based on game state
             if self.state == 'menu':
                 running = self.menu.handle_events()
                 self.menu.draw(self.screen)
-            else:
+            elif self.state == 'playing':
                 running = self.handle_events()
                 self.update()
                 self.render()
             
-            pygame.display.flip()
+            # Maintain consistent frame rate
+            self.clock.tick(FPS)
 
         pygame.quit()
         sys.exit()
