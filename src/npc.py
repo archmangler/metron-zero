@@ -4,19 +4,34 @@ from .weapons import Weapon
 import random
 
 class NPC(pygame.sprite.Sprite):  # Make sure the class is named NPC, not npc
-    def __init__(self, x, y):
+    def __init__(self, x, y, npc_type):
         super().__init__()
-        # Load NPC sprite
+        self.npc_type = npc_type
+        
+        # Load appropriate sprite based on NPC type
         try:
-            self.image = pygame.image.load(NPC_SPRITE).convert_alpha()
-            self.image = pygame.transform.scale(self.image, (ENEMY_SIZE, ENEMY_SIZE))
-        except pygame.error:
-            self.image = pygame.Surface((ENEMY_SIZE, ENEMY_SIZE))
-            self.image.fill(GREEN)
-            
+            self.image = pygame.image.load(f"assets/images/npcs/{npc_type}.png").convert_alpha()
+        except:
+            # Create colored rectangle as fallback
+            self.image = pygame.Surface((32, 32))
+            if npc_type == 'merchant':
+                self.image.fill((255, 215, 0))  # Gold for merchant
+            elif npc_type == 'healer':
+                self.image.fill((255, 182, 193))  # Pink for healer
+            else:  # quest_giver
+                self.image.fill((147, 112, 219))  # Purple for quest giver
+        
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        
+        # Set NPC properties based on type
+        if npc_type == 'merchant':
+            self.interaction_text = "Press E to trade"
+        elif npc_type == 'healer':
+            self.interaction_text = "Press E to heal"
+        else:  # quest_giver
+            self.interaction_text = "Press E for quest"
         
         # NPC properties
         self.weapons_inventory = []
@@ -47,17 +62,17 @@ class NPC(pygame.sprite.Sprite):  # Make sure the class is named NPC, not npc
             self.has_weapons = False
 
     def interact(self, player):
-        if self.has_weapons:
-            # Show available weapons
-            print("Available weapons:")  # Replace with proper UI implementation
-            for weapon in self.weapons_inventory:
-                print(f"{weapon['name']} - Damage: {weapon['damage']} - Price: {weapon['price']}")
-        else:
-            print("I will go out and look for weapons parts. Please come back later.")
+        """Handle player interaction based on NPC type"""
+        if self.npc_type == 'merchant':
+            # TODO: Open trade menu
+            pass
+        elif self.npc_type == 'healer':
+            # Heal player
+            player.health = min(player.health + 50, player.max_health)
+        elif self.npc_type == 'quest_giver':
+            # TODO: Open quest dialog
+            pass
 
-    def update(self, *args):
-        # Attempt to restock periodically
-        self.restock_timer += 1
-        if self.restock_timer >= self.restock_delay:
-            self.restock_timer = 0
-            self.restock_inventory()
+    def update(self):
+        # NPCs don't move, but could have idle animations
+        pass

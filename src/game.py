@@ -118,6 +118,7 @@ class Game:
         # Initialize game objects
         self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         self.enemies = pygame.sprite.Group()
+        self.npcs = pygame.sprite.Group()
         self.obstacles = pygame.sprite.Group()
         self.particles = ParticleSystem()
         
@@ -136,8 +137,9 @@ class Game:
         # Initialize score
         self.score = 0
         
-        # Spawn initial enemies
+        # Spawn initial enemies and NPCs
         self.spawn_enemies()
+        self.spawn_npcs()
 
     def spawn_enemies(self):
         # Clear existing enemies
@@ -150,6 +152,29 @@ class Game:
             enemy_type = random.choice(['enemy1', 'enemy2'])
             enemy = Enemy(x, y, enemy_type)
             self.enemies.add(enemy)
+
+    def spawn_npcs(self):
+        """Spawn NPCs at random positions"""
+        # Clear existing NPCs
+        self.npcs.empty()
+        
+        # Spawn 3 NPCs
+        npc_types = ['merchant', 'healer', 'quest_giver']
+        for npc_type in npc_types:
+            # Spawn NPC away from player start position
+            while True:
+                x = random.randint(100, SCREEN_WIDTH - 100)
+                y = random.randint(100, SCREEN_HEIGHT - 100)
+                
+                # Check distance from player start position
+                dx = x - SCREEN_WIDTH // 2
+                dy = y - SCREEN_HEIGHT // 2
+                distance = (dx * dx + dy * dy) ** 0.5
+                
+                if distance > 200:  # Minimum distance from player
+                    npc = NPC(x, y, npc_type)
+                    self.npcs.add(npc)
+                    break
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -256,9 +281,14 @@ class Game:
         # Draw terrain
         self.terrain_manager.draw(self.screen, self.camera)
         
-        # Draw game objects relative to camera
-        for sprite in sorted([self.player] + list(self.enemies) + list(self.obstacles), 
-                           key=lambda s: s.rect.bottom):
+        # Draw all game objects relative to camera
+        for sprite in sorted(
+            [self.player] + 
+            list(self.enemies) + 
+            list(self.npcs) +  # Add NPCs to rendering
+            list(self.obstacles), 
+            key=lambda s: s.rect.bottom
+        ):
             self.screen.blit(sprite.image, self.camera.apply(sprite))
         
         # Draw particles

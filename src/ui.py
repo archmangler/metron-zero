@@ -43,21 +43,15 @@ class UI:
             radar_surface = pygame.Surface((self.radar_size, self.radar_size))
             radar_surface.fill((0, 0, 0))  # Black background
             
-            # Draw radar border (make it very visible for testing)
+            # Draw radar border
             pygame.draw.rect(radar_surface, (0, 255, 0), 
-                           (0, 0, self.radar_size, self.radar_size), 4)  # Even thicker border
-            
-            # Draw a test pattern to verify radar is visible
-            pygame.draw.line(radar_surface, (255, 0, 0), 
-                            (0, 0), (self.radar_size, self.radar_size), 2)
-            pygame.draw.line(radar_surface, (255, 0, 0), 
-                            (0, self.radar_size), (self.radar_size, 0), 2)
+                           (0, 0, self.radar_size, self.radar_size), 2)  # Green border
             
             # Calculate radar center
             radar_center = (self.radar_size // 2, self.radar_size // 2)
             
             # Draw player position (center of radar)
-            pygame.draw.circle(radar_surface, (0, 255, 0), radar_center, 6)  # Even larger green dot
+            pygame.draw.circle(radar_surface, (0, 255, 0), radar_center, 4)  # Green dot for player
             
             # Draw enemies on radar
             for enemy in self.game.enemies:
@@ -74,7 +68,27 @@ class UI:
                     0 <= radar_y < self.radar_size):
                     # Draw enemy dot
                     pygame.draw.circle(radar_surface, (255, 0, 0), 
-                                     (radar_x, radar_y), 4)  # Larger red dot
+                                     (radar_x, radar_y), 3)  # Red dot for enemies
+            
+            # Draw NPCs on radar
+            try:
+                for npc in self.game.npcs:  # Add NPCs to radar
+                    # Calculate relative position to player
+                    rel_x = npc.rect.centerx - self.game.player.rect.centerx
+                    rel_y = npc.rect.centery - self.game.player.rect.centery
+                    
+                    # Scale position to radar size
+                    radar_x = radar_center[0] + int(rel_x * self.radar_scale)
+                    radar_y = radar_center[1] + int(rel_y * self.radar_scale)
+                    
+                    # Check if NPC is within radar bounds
+                    if (0 <= radar_x < self.radar_size and 
+                        0 <= radar_y < self.radar_size):
+                        # Draw NPC dot (blue for NPCs)
+                        pygame.draw.circle(radar_surface, (0, 191, 255), 
+                                         (radar_x, radar_y), 3)  # Light blue dot for NPCs
+            except AttributeError:
+                pass  # Skip if game doesn't have NPCs
             
             # Add semi-transparent background
             background = pygame.Surface((self.radar_size + 8, self.radar_size + 8))
@@ -84,7 +98,26 @@ class UI:
             
             # Add radar to main screen
             screen.blit(radar_surface, self.radar_position)
-            print("Radar drawn at position:", self.radar_position)  # Debug output
+            
+            # Draw radar legend
+            legend_y = self.radar_position[1] + self.radar_size + 5
+            legend_x = self.radar_position[0]
+            legend_font = pygame.font.Font(None, 20)
+            
+            # Player legend
+            pygame.draw.circle(screen, (0, 255, 0), (legend_x + 5, legend_y), 3)
+            player_text = legend_font.render("Player", True, (255, 255, 255))
+            screen.blit(player_text, (legend_x + 15, legend_y - 5))
+            
+            # Enemy legend
+            pygame.draw.circle(screen, (255, 0, 0), (legend_x + 65, legend_y), 3)
+            enemy_text = legend_font.render("Enemy", True, (255, 255, 255))
+            screen.blit(enemy_text, (legend_x + 75, legend_y - 5))
+            
+            # NPC legend
+            pygame.draw.circle(screen, (0, 191, 255), (legend_x + 125, legend_y), 3)
+            npc_text = legend_font.render("NPC", True, (255, 255, 255))
+            screen.blit(npc_text, (legend_x + 135, legend_y - 5))
         
         # Draw health bar
         self.draw_health_bar(screen)
