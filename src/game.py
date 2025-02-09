@@ -225,28 +225,29 @@ class Game:
                 clicked_item.use(self.player)
 
     def update(self):
-        # Update player
-        self.player.update(self.terrain_manager, self.obstacles)
-        
-        # Update enemies
-        for enemy in self.enemies:
-            enemy.update(self.player, self.terrain_manager, self.obstacles)
-        
-        # Check collisions
-        self.check_collisions()
-        
-        # Update camera
-        self.camera.update(self.player)
-        
-        # Update UI
-        self.ui.update()
-        
-        # Update particles
-        self.particles.update()
-        
-        # Check game over condition
-        if self.player.health <= 0:
-            self.state = 'game_over'
+        if self.state == 'playing':
+            # Update player
+            self.player.update(self.terrain_manager, self.obstacles)
+            
+            # Update enemies
+            for enemy in self.enemies:
+                enemy.update(self.player, self.terrain_manager, self.obstacles)
+            
+            # Check collisions
+            self.check_collisions()
+            
+            # Check victory condition
+            if len(self.enemies) == 0:
+                self.state = 'victory'
+            
+            # Update camera
+            self.camera.update(self.player)
+            
+            # Update UI
+            self.ui.update()
+            
+            # Update particles
+            self.particles.update()
 
     def render(self):
         # Clear screen
@@ -371,8 +372,18 @@ class Game:
                             self.state = 'playing'
                         elif event.key == pygame.K_ESCAPE:
                             self.state = 'menu'
-                
-                # Draw game over screen
+                self.menu.draw(self.screen)
+            elif self.state == 'victory':
+                # Handle victory events
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            self.setup_game()
+                            self.state = 'playing'
+                        elif event.key == pygame.K_ESCAPE:
+                            self.state = 'menu'
                 self.menu.draw(self.screen)
             
             # Maintain consistent frame rate

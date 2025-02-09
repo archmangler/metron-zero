@@ -71,4 +71,25 @@ class Menu:
             restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, 2 * SCREEN_HEIGHT // 3))
             screen.blit(restart_text, restart_rect)
         
+        elif self.game.state == 'victory':
+            # Draw victory screen
+            victory_text = self.font.render('Victory!', True, (0, 255, 0))  # Green color
+            victory_rect = victory_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3))
+            screen.blit(victory_text, victory_rect)
+            
+            # Draw score
+            score_text = self.small_font.render(f'Final Score: {self.game.score}', True, WHITE)
+            score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+            screen.blit(score_text, score_rect)
+            
+            # Draw congratulations
+            congrats_text = self.small_font.render('Congratulations! You defeated all enemies!', True, WHITE)
+            congrats_rect = congrats_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+            screen.blit(congrats_text, congrats_rect)
+            
+            # Draw restart instructions
+            restart_text = self.small_font.render('Press SPACE to play again or ESC to quit', True, WHITE)
+            restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, 2 * SCREEN_HEIGHT // 3))
+            screen.blit(restart_text, restart_rect)
+        
         pygame.display.flip()
