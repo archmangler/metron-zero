@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 import math
+import random
 from config import *
 from .player import Player
 from .enemy import Enemy
@@ -14,6 +15,9 @@ from .menu import Menu
 from .save_system import SaveSystem
 from .inventory import Inventory
 from .quest import QuestManager
+from .ui import UI
+from .particles import ParticleSystem
+from .camera import Camera
 
 class Game:
     def __init__(self):
@@ -53,6 +57,15 @@ class Game:
         
         # Initialize new systems
         self.weapon_manager = WeaponManager()
+        
+        # Initialize camera
+        self.camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
+        
+        # Initialize UI
+        self.ui = UI(self)
+        
+        # Initialize particles
+        self.particles = ParticleSystem()
         
         # Setup initial game state
         self.setup_game()
@@ -102,16 +115,15 @@ class Game:
         self.npcs.add(self.weapons_vendor)
 
     def spawn_enemies(self):
-        # Spawn enemy type 1
-        for pos in ENEMY1_SPAWN_POSITIONS:
-            enemy = Enemy(*pos, 'enemy1')
-            self.all_sprites.add(enemy)
-            self.enemies.add(enemy)
+        # Clear existing enemies
+        self.enemies.empty()
         
-        # Spawn enemy type 2
-        for pos in ENEMY2_SPAWN_POSITIONS:
-            enemy = Enemy(*pos, 'enemy2')
-            self.all_sprites.add(enemy)
+        # Spawn new enemies
+        for _ in range(5):  # Spawn 5 enemies
+            x = random.randint(100, SCREEN_WIDTH - 100)
+            y = random.randint(100, SCREEN_HEIGHT - 100)
+            enemy_type = random.choice(['enemy1', 'enemy2'])
+            enemy = Enemy(x, y, enemy_type)
             self.enemies.add(enemy)
 
     def handle_events(self):
@@ -188,30 +200,28 @@ class Game:
                 clicked_item.use(self.player)
 
     def update(self):
-        if self.state == 'playing':
-            # Get current terrain for the player's position
-            current_terrain = self.terrain_manager.get_terrain_at_position(
-                self.player.rect.centerx, 
-                self.player.rect.centery
-            )
-            
-            # Update all game objects
-            self.player.update(self.terrain_manager, self.obstacles)
-            
-            # Update each enemy individually
-            for enemy in self.enemies:
-                enemy.update(self.player, self.obstacles)
-            
-            self.npcs.update()
-            
-            # Update particle effects
-            for effect in self.effects[:]:
-                effect.update()
-                if not effect.particles:
-                    self.effects.remove(effect)
-            
-            # Check for collisions
-            self.check_collisions()
+        # Update player
+        self.player.update(self.terrain_manager, self.obstacles)
+        
+        # Update enemies
+        for enemy in self.enemies:
+            enemy.update(self.player, self.terrain_manager, self.obstacles)
+        
+        # Check collisions
+        self.check_collisions()
+        
+        # Update camera
+        self.camera.update(self.player)
+        
+        # Update UI
+        self.ui.update()
+        
+        # Update particles
+        self.particles.update()
+        
+        # Check game over condition
+        if self.player.health <= 0:
+            self.menu.show_game_over()
 
     def render(self):
         # Draw background
@@ -219,16 +229,19 @@ class Game:
         
         if self.state == 'playing' or self.state == 'inventory':
             # Draw terrain
-            for terrain in self.terrain_manager.terrain_grid:
-                self.screen.blit(terrain.image, terrain.rect)
+            self.terrain_manager.draw(self.screen, self.camera)
             
-            # Draw game objects
-            self.obstacles.draw(self.screen)
-            self.all_sprites.draw(self.screen)
+            # Draw game objects relative to camera
+            for sprite in sorted([self.player] + list(self.enemies) + list(self.obstacles), 
+                               key=lambda s: s.rect.bottom):
+                self.screen.blit(sprite.image, self.camera.apply(sprite))
             
             # Draw effects
             for effect in self.effects:
                 effect.draw(self.screen)
+            
+            # Draw particles
+            self.particles.draw(self.screen, self.camera)
             
             # Draw UI elements
             self.draw_ui()

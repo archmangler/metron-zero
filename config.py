@@ -83,6 +83,16 @@ GRASS_MAP = os.path.join(MAPS_DIR, 'grass_map.png')
 DESERT_MAP = os.path.join(MAPS_DIR, 'desert_map.png')
 DUNGEON_MAP = os.path.join(MAPS_DIR, 'dungeon_map.png')
 
+# Add to the existing config.py
+PLAYER_SPRITE_SHEET = os.path.join(IMAGES_DIR, 'knight_sheet.png')
+PLAYER_SPRITE_RIGHT = os.path.join(IMAGES_DIR, 'right.png')
+PLAYER_SPRITE_LEFT = os.path.join(IMAGES_DIR, 'left.png')
+PLAYER_SPRITE_UP = os.path.join(IMAGES_DIR, 'up.png')
+PLAYER_SPRITE_DOWN = os.path.join(IMAGES_DIR, 'down.png')
+
+# Add to existing config.py
+ENEMY_ASSETS_DIR = os.path.join(ASSETS_DIR, 'enemy')
+
 # Make sure required directories exist
 os.makedirs(IMAGES_DIR, exist_ok=True)
 os.makedirs(SOUNDS_DIR, exist_ok=True)
@@ -91,13 +101,13 @@ os.makedirs(SAVES_DIR, exist_ok=True)
 # Verify assets exist
 def verify_assets():
     required_images = [
-        PLAYER_SPRITE,
-        ENEMY1_SPRITE,
-        ENEMY2_SPRITE,
-        NPC_SPRITE,
-        GRASS_MAP,
-        DESERT_MAP,
-        DUNGEON_MAP
+        PLAYER_SPRITE_RIGHT,
+        PLAYER_SPRITE_LEFT,
+        PLAYER_SPRITE_UP,
+        PLAYER_SPRITE_DOWN,
+        os.path.join(ENEMY_ASSETS_DIR, 'enemy1', 'idle.png'),
+        os.path.join(ENEMY_ASSETS_DIR, 'enemy1', 'walk.png'),
+        os.path.join(ENEMY_ASSETS_DIR, 'enemy1', 'attack.png')
     ]
     
     missing_assets = []

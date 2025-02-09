@@ -3,11 +3,14 @@ from config import *
 from .weapons import Weapon, WeaponManager
 from .inventory import Inventory
 import math
+from .animation import DirectionalAnimation
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.load_sprites()
+        # Initialize directional animation
+        self.animation = DirectionalAnimation()
+        self.image = self.animation.get_current_frame()
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -17,11 +20,13 @@ class Player(pygame.sprite.Sprite):
         self.speed = PLAYER_SPEED
         self.velocity_x = 0
         self.velocity_y = 0
+        self.last_update = pygame.time.get_ticks()
         
         # Combat
         self.health = PLAYER_HEALTH
         self.invulnerable = False
         self.invulnerable_timer = 0
+        self.attacking = False
         
         # Weapons
         self.weapons = []
@@ -31,34 +36,48 @@ class Player(pygame.sprite.Sprite):
         # Initialize with a basic weapon
         self.add_weapon(Weapon('Basic Sword', 10, 100))
 
-    def load_sprites(self):
-        # Load and scale player image
-        try:
-            self.image = pygame.image.load(PLAYER_SPRITE).convert_alpha()
-            self.image = pygame.transform.scale(self.image, (PLAYER_SIZE, PLAYER_SIZE))
-        except pygame.error:
-            # Fallback to a colored rectangle if image loading fails
-            self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
-            self.image.fill(BLUE)
-
     def update(self, terrain_manager, obstacles):
+        current_time = pygame.time.get_ticks()
+        dt = current_time - self.last_update
+        self.last_update = current_time
+        
         # Get input
         keys = pygame.key.get_pressed()
         
         # Reset velocity
         self.velocity_x = 0
         self.velocity_y = 0
+        is_moving = False
+        direction = self.animation.current_direction
         
-        # Movement
+        # Movement and direction
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.velocity_x = -self.speed
+            direction = 'left'
+            is_moving = True
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             self.velocity_x = self.speed
+            direction = 'right'
+            is_moving = True
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             self.velocity_y = -self.speed
+            direction = 'up'
+            is_moving = True
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.velocity_y = self.speed
+            direction = 'down'
+            is_moving = True
             
+        # Attack input
+        if keys[pygame.K_SPACE]:
+            self.attacking = True
+        else:
+            self.attacking = False
+        
+        # Update animation
+        self.animation.update(dt, direction, is_moving)
+        self.image = self.animation.get_current_frame()
+        
         # Apply terrain movement penalty
         current_terrain = terrain_manager.get_terrain_at_position(
             self.rect.centerx, 
@@ -70,12 +89,10 @@ class Player(pygame.sprite.Sprite):
         
         # Move X
         self.rect.x += self.velocity_x
-        # Check X collision
         self.handle_collision(obstacles, 'x')
         
         # Move Y
         self.rect.y += self.velocity_y
-        # Check Y collision
         self.handle_collision(obstacles, 'y')
         
         # Update invulnerability
