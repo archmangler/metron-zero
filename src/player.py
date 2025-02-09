@@ -1,7 +1,8 @@
 import pygame
-from config import *
+from ..config import *
+from .weapons import Weapon, WeaponManager
+from .inventory import Inventory
 import math
-from weapons import Weapon, WeaponManager
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):

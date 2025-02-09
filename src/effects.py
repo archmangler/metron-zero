@@ -1,6 +1,6 @@
 import pygame
 import random
-from config import *
+from ..config import *
 
 class ParticleEffect:
     def __init__(self, x, y, color, particle_count=10, lifetime=30):

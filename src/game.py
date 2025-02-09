@@ -1,17 +1,18 @@
 import pygame
 import sys
-from config import *
-from player import Player
-from enemy import Enemy
-from npc import NPC
-from environment import TerrainManager
-from weapons import WeaponManager
-from effects import ParticleEffect, AnimationManager
-from sound import SoundManager
-from menu import Menu
-from save_system import SaveSystem
-from inventory import Inventory
-from quest import QuestManager
+import os
+from ..config import *
+from .player import Player
+from .enemy import Enemy
+from .npc import NPC
+from .environment import TerrainManager
+from .weapons import WeaponManager
+from .effects import ParticleEffect, AnimationManager
+from .sound import SoundManager
+from .menu import Menu
+from .save_system import SaveSystem
+from .inventory import Inventory
+from .quest import QuestManager
 
 class Game:
     def __init__(self):

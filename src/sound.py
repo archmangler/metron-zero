@@ -1,5 +1,5 @@
 import pygame
-from config import *
+from ..config import *
 
 class SoundManager:
     def __init__(self):

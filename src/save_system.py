@@ -1,6 +1,8 @@
 import json
 import os
 from datetime import datetime
+from ..config import *
+from .weapons import Weapon
 
 class SaveSystem:
     def __init__(self, game):

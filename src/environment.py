@@ -1,5 +1,5 @@
 import pygame
-from config import *
+from ..config import *
 
 class Terrain(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, terrain_type):

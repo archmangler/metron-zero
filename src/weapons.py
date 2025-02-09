@@ -1,5 +1,5 @@
 import pygame
-from config import *
+from ..config import *
 
 class Weapon:
     def __init__(self, name, damage, price, range=50):

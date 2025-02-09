@@ -1,10 +1,11 @@
 import sys
 import os
 
-# Add the src directory to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+# Add the project root directory to Python path
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(project_root)
 
-from game import Game
+from src.game import Game
 
 if __name__ == '__main__':
     game = Game()
