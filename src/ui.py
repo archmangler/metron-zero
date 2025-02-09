@@ -15,10 +15,16 @@ class UI:
         # Score settings
         self.score_position = (SCREEN_WIDTH - 150, 20)
         
+        # Radar settings
+        self.show_radar = True
+        self.radar_size = 150
+        self.radar_position = (20, 60)
+        self.radar_scale = 0.1
+        
         # Message settings
         self.message = ""
         self.message_timer = 0
-        self.message_duration = 2000  # 2 seconds
+        self.message_duration = 2000
     
     def update(self):
         # Update message timer
@@ -28,6 +34,58 @@ class UI:
                 self.message = ""
     
     def draw(self, screen):
+        print("Drawing UI, radar status:", self.show_radar)  # Debug output
+        
+        # Draw radar first (so it's behind other UI elements)
+        if self.show_radar:
+            print("Drawing radar")  # Debug output
+            # Create radar surface
+            radar_surface = pygame.Surface((self.radar_size, self.radar_size))
+            radar_surface.fill((0, 0, 0))  # Black background
+            
+            # Draw radar border (make it very visible for testing)
+            pygame.draw.rect(radar_surface, (0, 255, 0), 
+                           (0, 0, self.radar_size, self.radar_size), 4)  # Even thicker border
+            
+            # Draw a test pattern to verify radar is visible
+            pygame.draw.line(radar_surface, (255, 0, 0), 
+                            (0, 0), (self.radar_size, self.radar_size), 2)
+            pygame.draw.line(radar_surface, (255, 0, 0), 
+                            (0, self.radar_size), (self.radar_size, 0), 2)
+            
+            # Calculate radar center
+            radar_center = (self.radar_size // 2, self.radar_size // 2)
+            
+            # Draw player position (center of radar)
+            pygame.draw.circle(radar_surface, (0, 255, 0), radar_center, 6)  # Even larger green dot
+            
+            # Draw enemies on radar
+            for enemy in self.game.enemies:
+                # Calculate relative position to player
+                rel_x = enemy.rect.centerx - self.game.player.rect.centerx
+                rel_y = enemy.rect.centery - self.game.player.rect.centery
+                
+                # Scale position to radar size
+                radar_x = radar_center[0] + int(rel_x * self.radar_scale)
+                radar_y = radar_center[1] + int(rel_y * self.radar_scale)
+                
+                # Check if enemy is within radar bounds
+                if (0 <= radar_x < self.radar_size and 
+                    0 <= radar_y < self.radar_size):
+                    # Draw enemy dot
+                    pygame.draw.circle(radar_surface, (255, 0, 0), 
+                                     (radar_x, radar_y), 4)  # Larger red dot
+            
+            # Add semi-transparent background
+            background = pygame.Surface((self.radar_size + 8, self.radar_size + 8))
+            background.fill((40, 40, 40))  # Dark gray
+            background.set_alpha(200)  # Semi-transparent
+            screen.blit(background, (self.radar_position[0] - 4, self.radar_position[1] - 4))
+            
+            # Add radar to main screen
+            screen.blit(radar_surface, self.radar_position)
+            print("Radar drawn at position:", self.radar_position)  # Debug output
+        
         # Draw health bar
         self.draw_health_bar(screen)
         
@@ -87,4 +145,7 @@ class UI:
         
         restart_text = self.small_font.render("Press SPACE to restart or ESC to quit", True, WHITE)
         restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
-        self.game.screen.blit(restart_text, restart_rect) 
+        self.game.screen.blit(restart_text, restart_rect)
+
+    def toggle_radar(self):
+        self.show_radar = not self.show_radar 

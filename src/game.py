@@ -149,11 +149,9 @@ class Game:
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    if self.state == 'playing':
-                        self.state = 'paused'
-                    elif self.state == 'paused':
-                        self.state = 'playing'
-                
+                    self.state = 'menu'
+                elif event.key == pygame.K_t:  # Changed from 'r' to 't'
+                    self.ui.toggle_radar()
                 elif event.key == pygame.K_i:
                     if self.state == 'playing':
                         self.state = 'inventory'
@@ -165,8 +163,9 @@ class Game:
                 elif event.key == pygame.K_e and self.state == 'playing':
                     self.player.interact(self.npcs)
                 
-                elif event.key == pygame.K_SPACE and self.state == 'playing':
-                    self.handle_combat()
+                elif event.key == pygame.K_SPACE and self.state == 'game_over':
+                    self.setup_game()
+                    self.state = 'playing'
                 
                 # Quick save/load for testing
                 elif event.key == pygame.K_F5:
@@ -240,38 +239,24 @@ class Game:
             self.state = 'game_over'
 
     def render(self):
-        # Draw background
-        self.screen.blit(self.backgrounds[self.current_background], (0, 0))
+        # Clear screen
+        self.screen.fill(BLACK)
         
-        if self.state == 'playing' or self.state == 'inventory':
-            # Draw terrain
-            self.terrain_manager.draw(self.screen, self.camera)
-            
-            # Draw game objects relative to camera
-            for sprite in sorted([self.player] + list(self.enemies) + list(self.obstacles), 
-                               key=lambda s: s.rect.bottom):
-                self.screen.blit(sprite.image, self.camera.apply(sprite))
-            
-            # Draw effects
-            for effect in self.effects:
-                effect.draw(self.screen)
-            
-            # Draw particles
-            self.particles.draw(self.screen, self.camera)
-            
-            # Draw UI elements
-            self.draw_ui()
-            
-            # Draw inventory if open
-            if self.state == 'inventory':
-                self.player.inventory.draw(self.screen)
+        # Draw terrain
+        self.terrain_manager.draw(self.screen, self.camera)
         
-        elif self.state == 'paused':
-            self.draw_pause_menu()
+        # Draw game objects relative to camera
+        for sprite in sorted([self.player] + list(self.enemies) + list(self.obstacles), 
+                           key=lambda s: s.rect.bottom):
+            self.screen.blit(sprite.image, self.camera.apply(sprite))
         
-        elif self.state == 'menu':
-            self.menu.draw(self.screen)
+        # Draw particles
+        self.particles.draw(self.screen, self.camera)
         
+        # Draw UI (not affected by camera)
+        self.ui.draw(self.screen)
+        
+        # Update display
         pygame.display.flip()
 
     def draw_ui(self):
