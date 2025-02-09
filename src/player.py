@@ -46,6 +46,10 @@ class Player(pygame.sprite.Sprite):
         # Initialize with a basic weapon
         self.add_weapon(Weapon('Basic Sword', 10, 100))
 
+        # Inventory system
+        self.inventory = Inventory()
+        self.inventory.visible = False  # Start with inventory hidden
+
     def update(self, terrain_manager, obstacles):
         current_time = pygame.time.get_ticks()
         dt = current_time - self.last_update
@@ -157,3 +161,62 @@ class Player(pygame.sprite.Sprite):
         self.health -= amount
         self.invulnerable = True
         self.invulnerable_timer = 0 
+
+class Inventory:
+    def __init__(self):
+        self.items = []
+        self.visible = False
+        self.max_items = 20  # Maximum inventory size
+        
+    def add_item(self, item):
+        """Add an item to inventory if there's space"""
+        if len(self.items) < self.max_items:
+            self.items.append(item)
+            return True
+        return False
+    
+    def remove_item(self, item):
+        """Remove an item from inventory"""
+        if item in self.items:
+            self.items.remove(item)
+            return True
+        return False
+    
+    def has_item(self, item_name):
+        """Check if inventory contains an item by name"""
+        return any(item.name == item_name for item in self.items)
+    
+    def toggle_visibility(self):
+        """Toggle inventory visibility"""
+        self.visible = not self.visible
+    
+    def draw(self, screen):
+        """Draw inventory if visible"""
+        if not self.visible:
+            return
+            
+        # Draw inventory background
+        inventory_surface = pygame.Surface((400, 300))
+        inventory_surface.fill((50, 50, 50))  # Dark gray background
+        
+        # Draw border
+        pygame.draw.rect(inventory_surface, (200, 200, 200), 
+                        inventory_surface.get_rect(), 2)  # Light gray border
+        
+        # Draw title
+        font = pygame.font.Font(None, 36)
+        title = font.render("Inventory", True, (255, 255, 255))
+        inventory_surface.blit(title, (10, 10))
+        
+        # Draw items
+        item_font = pygame.font.Font(None, 24)
+        for i, item in enumerate(self.items):
+            y_pos = 50 + i * 30
+            if y_pos < 280:  # Prevent drawing outside inventory window
+                text = item_font.render(f"{item.name} x{item.quantity}", True, (255, 255, 255))
+                inventory_surface.blit(text, (20, y_pos))
+        
+        # Position inventory in center of screen
+        screen_rect = screen.get_rect()
+        inventory_rect = inventory_surface.get_rect(center=screen_rect.center)
+        screen.blit(inventory_surface, inventory_rect) 

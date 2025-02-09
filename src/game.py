@@ -182,23 +182,20 @@ class Game:
                 return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.state = 'menu'
-                elif event.key == pygame.K_t:
+                    if self.player.inventory.visible:
+                        self.player.inventory.visible = False
+                    else:
+                        self.state = 'menu'
+                elif event.key == pygame.K_i:  # 'I' key toggles inventory
+                    self.player.inventory.toggle_visibility()
+                elif event.key == pygame.K_t:  # 'T' key toggles radar
                     self.ui.toggle_radar()
                 elif event.key == pygame.K_SPACE:
                     if self.state == 'game_over':
                         self.setup_game()
                         self.state = 'playing'
                     else:
-                        self.player.attack()  # Trigger attack on space
-                elif event.key == pygame.K_i:
-                    if self.state == 'playing':
-                        self.state = 'inventory'
-                        self.player.inventory.visible = True
-                    elif self.state == 'inventory':
-                        self.state = 'playing'
-                        self.player.inventory.visible = False
-                
+                        self.player.attack()
                 elif event.key == pygame.K_e and self.state == 'playing':
                     self.player.interact(self.npcs)
                 
@@ -292,7 +289,7 @@ class Game:
         for sprite in sorted(
             [self.player] + 
             list(self.enemies) + 
-            list(self.npcs) +  # Add NPCs to rendering
+            list(self.npcs) + 
             list(self.obstacles), 
             key=lambda s: s.rect.bottom
         ):
@@ -301,8 +298,12 @@ class Game:
         # Draw particles
         self.particles.draw(self.screen, self.camera)
         
-        # Draw UI (not affected by camera)
+        # Draw UI
         self.ui.draw(self.screen)
+        
+        # Draw inventory if visible
+        if self.player.inventory.visible:
+            self.player.inventory.draw(self.screen)
         
         # Update display
         pygame.display.flip()
