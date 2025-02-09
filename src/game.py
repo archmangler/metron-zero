@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+import math
 from config import *
 from .player import Player
 from .enemy import Enemy
@@ -19,7 +20,7 @@ class Game:
         # Initialize Pygame
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("2D RPG Game")
+        pygame.display.set_caption("Metron-Zero")
         self.clock = pygame.time.Clock()
         
         # Initialize game systems
@@ -36,23 +37,12 @@ class Game:
         self.npcs = pygame.sprite.Group()
         self.obstacles = pygame.sprite.Group()
         
-        # Load and scale background images
-        self.backgrounds = {
-            'sea': pygame.transform.scale(
-                pygame.image.load('assets/sea.png').convert_alpha(),
-                (SCREEN_WIDTH, SCREEN_HEIGHT)
-            ),
-            'desert': pygame.transform.scale(
-                pygame.image.load('assets/desert.png').convert_alpha(),
-                (SCREEN_WIDTH, SCREEN_HEIGHT)
-            ),
-            'hellscape': pygame.transform.scale(
-                pygame.image.load('assets/hellscape.png').convert_alpha(),
-                (SCREEN_WIDTH, SCREEN_HEIGHT)
-            )
-        }
-        
+        # Game state
+        self.state = 'menu'  # 'menu', 'playing', 'inventory', 'paused'
         self.current_background = 'hellscape'
+        
+        # Load backgrounds
+        self.backgrounds = self.load_backgrounds()
         
         # Initialize terrain
         self.terrain_manager = TerrainManager(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -64,13 +54,38 @@ class Game:
         # Initialize new systems
         self.weapon_manager = WeaponManager()
         
-        # Game state
-        self.state = 'menu'  # 'menu', 'playing', 'inventory', 'paused'
+        # Setup initial game state
+        self.setup_game()
         
         # Start background music
         self.sound_manager.play_music('background_music.wav')
-        
-        self.setup_game()
+
+    def load_backgrounds(self):
+        try:
+            return {
+                'sea': pygame.transform.scale(
+                    pygame.image.load(os.path.join(IMAGES_DIR, 'sea.png')).convert_alpha(),
+                    (SCREEN_WIDTH, SCREEN_HEIGHT)
+                ),
+                'desert': pygame.transform.scale(
+                    pygame.image.load(os.path.join(IMAGES_DIR, 'desert.png')).convert_alpha(),
+                    (SCREEN_WIDTH, SCREEN_HEIGHT)
+                ),
+                'hellscape': pygame.transform.scale(
+                    pygame.image.load(os.path.join(IMAGES_DIR, 'hellscape.png')).convert_alpha(),
+                    (SCREEN_WIDTH, SCREEN_HEIGHT)
+                )
+            }
+        except pygame.error as e:
+            print(f"Warning: Could not load background images: {e}")
+            # Create fallback solid color backgrounds
+            fallback = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            fallback.fill((100, 100, 100))  # Gray color
+            return {
+                'sea': fallback.copy(),
+                'desert': fallback.copy(),
+                'hellscape': fallback.copy()
+            }
 
     def setup_game(self):
         # Create player with inventory
@@ -174,18 +189,20 @@ class Game:
 
     def update(self):
         if self.state == 'playing':
-            # Get current terrain for player position
+            # Get current terrain for the player's position
             current_terrain = self.terrain_manager.get_terrain_at_position(
-                self.player.rect.centerx,
+                self.player.rect.centerx, 
                 self.player.rect.centery
             )
             
             # Update all game objects
-            self.all_sprites.update(self.obstacles, current_terrain)
+            self.player.update(self.terrain_manager, self.obstacles)
             
-            # Update enemy AI
+            # Update each enemy individually
             for enemy in self.enemies:
-                enemy.update_ai(self.player)
+                enemy.update(self.player, self.obstacles)
+            
+            self.npcs.update()
             
             # Update particle effects
             for effect in self.effects[:]:
@@ -193,8 +210,8 @@ class Game:
                 if not effect.particles:
                     self.effects.remove(effect)
             
-            # Check quest completion
-            self.quest_manager.check_quest_completion(self.player)
+            # Check for collisions
+            self.check_collisions()
 
     def render(self):
         # Draw background
@@ -264,6 +281,53 @@ class Game:
         # Draw pause menu options
         pause_text = pygame.font.Font(None, 74).render("PAUSED", True, WHITE)
         self.screen.blit(pause_text, pause_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2)))
+
+    def check_collisions(self):
+        # Check player collision with enemies
+        if not self.player.invulnerable:
+            enemy_hits = pygame.sprite.spritecollide(
+                self.player, 
+                self.enemies, 
+                False, 
+                pygame.sprite.collide_mask
+            )
+            
+            for enemy in enemy_hits:
+                if enemy.attack_cooldown <= 0:
+                    # Player takes damage
+                    self.player.health -= enemy.damage
+                    self.sound_manager.play_sound('player_hurt')
+                    
+                    # Apply knockback to player
+                    knockback_direction = pygame.math.Vector2(
+                        self.player.rect.centerx - enemy.rect.centerx,
+                        self.player.rect.centery - enemy.rect.centery
+                    )
+                    if knockback_direction.length() > 0:
+                        knockback_direction = knockback_direction.normalize()
+                        self.player.rect.x += knockback_direction.x * KNOCKBACK_FORCE
+                        self.player.rect.y += knockback_direction.y * KNOCKBACK_FORCE
+                    
+                    # Make player temporarily invulnerable
+                    self.player.invulnerable = True
+                    enemy.attack_cooldown = 30  # Half second cooldown at 60 FPS
+                    
+                    # Create hit effect
+                    self.create_hit_effect(self.player.rect.center)
+                    
+                    # Check if player died
+                    if self.player.health <= 0:
+                        self.state = 'menu'
+                        self.menu.show_game_over()
+                        return
+        
+        # Check NPC interaction range
+        for npc in self.npcs:
+            distance = math.sqrt(
+                (self.player.rect.centerx - npc.rect.centerx) ** 2 +
+                (self.player.rect.centery - npc.rect.centery) ** 2
+            )
+            npc.in_range = distance <= INTERACTION_RADIUS
 
     def run(self):
         running = True

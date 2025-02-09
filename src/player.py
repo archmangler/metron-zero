@@ -7,6 +7,31 @@ import math
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
+        self.load_sprites()
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.mask = pygame.mask.from_surface(self.image)
+        
+        # Movement
+        self.speed = PLAYER_SPEED
+        self.velocity_x = 0
+        self.velocity_y = 0
+        
+        # Combat
+        self.health = PLAYER_HEALTH
+        self.invulnerable = False
+        self.invulnerable_timer = 0
+        
+        # Weapons
+        self.weapons = []
+        self.current_weapon_index = 0
+        self.attack_cooldown = 0
+        
+        # Initialize with a basic weapon
+        self.add_weapon(Weapon('Basic Sword', 10, 100))
+
+    def load_sprites(self):
         # Load and scale player image
         try:
             self.image = pygame.image.load(PLAYER_SPRITE).convert_alpha()
@@ -15,43 +40,16 @@ class Player(pygame.sprite.Sprite):
             # Fallback to a colored rectangle if image loading fails
             self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
             self.image.fill(BLUE)
-        
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        
-        # Movement attributes
-        self.velocity_x = 0
-        self.velocity_y = 0
-        self.speed = PLAYER_SPEED
-        
-        # Game attributes
-        self.health = PLAYER_HEALTH
-        self.weapons = []
-        self.current_weapon_index = 0
-        self.invulnerability_frames = 0
-        self.facing_direction = pygame.math.Vector2(1, 0)  # Default facing right
-        
-        # Create a mask for better collision detection
-        self.mask = pygame.mask.from_surface(self.image)
-        
-        # Add starting weapon
-        starter_weapon = WeaponManager.create_weapon({
-            'name': 'Rusty Sword',
-            'damage': 10,
-            'price': 0,
-            'range': 40
-        })
-        self.add_weapon(starter_weapon)
 
-    def move(self, obstacles):
+    def update(self, terrain_manager, obstacles):
+        # Get input
         keys = pygame.key.get_pressed()
         
         # Reset velocity
         self.velocity_x = 0
         self.velocity_y = 0
         
-        # Handle movement input
+        # Movement
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.velocity_x = -self.speed
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
@@ -61,32 +59,48 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.velocity_y = self.speed
             
-        # Normalize diagonal movement
-        if self.velocity_x != 0 and self.velocity_y != 0:
-            self.velocity_x /= math.sqrt(2)
-            self.velocity_y /= math.sqrt(2)
+        # Apply terrain movement penalty
+        current_terrain = terrain_manager.get_terrain_at_position(
+            self.rect.centerx, 
+            self.rect.centery
+        )
+        terrain_penalty = TERRAIN_MOVEMENT_PENALTIES.get(current_terrain, 1.0)
+        self.velocity_x *= terrain_penalty
+        self.velocity_y *= terrain_penalty
         
         # Move X
         self.rect.x += self.velocity_x
+        # Check X collision
         self.handle_collision(obstacles, 'x')
         
         # Move Y
         self.rect.y += self.velocity_y
+        # Check Y collision
         self.handle_collision(obstacles, 'y')
+        
+        # Update invulnerability
+        if self.invulnerable:
+            self.invulnerable_timer += 1
+            if self.invulnerable_timer >= INVULNERABILITY_FRAMES:
+                self.invulnerable = False
+                self.invulnerable_timer = 0
+        
+        # Update attack cooldown
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= 1
 
     def handle_collision(self, obstacles, direction):
-        # Check collision with obstacles
         for obstacle in obstacles:
-            if self.rect.colliderect(obstacle.rect):
+            if pygame.sprite.collide_mask(self, obstacle):
                 if direction == 'x':
                     if self.velocity_x > 0:  # Moving right
                         self.rect.right = obstacle.rect.left
-                    elif self.velocity_x < 0:  # Moving left
+                    else:  # Moving left
                         self.rect.left = obstacle.rect.right
-                elif direction == 'y':
+                else:  # direction == 'y'
                     if self.velocity_y > 0:  # Moving down
                         self.rect.bottom = obstacle.rect.top
-                    elif self.velocity_y < 0:  # Moving up
+                    else:  # Moving up
                         self.rect.top = obstacle.rect.bottom
 
     def interact(self, npcs):
@@ -98,23 +112,6 @@ class Player(pygame.sprite.Sprite):
             )
             if distance <= INTERACTION_RADIUS:
                 npc.interact(self)
-
-    def update(self, obstacles, *args):
-        # Update invulnerability frames
-        if self.invulnerability_frames > 0:
-            self.invulnerability_frames -= 1
-        
-        # Update current weapon cooldown
-        if self.current_weapon:
-            self.current_weapon.update()
-        
-        # Get terrain effect
-        terrain = args[0].get_terrain_at_position(self.rect.centerx, self.rect.centery)
-        if terrain:
-            self.speed = PLAYER_SPEED * terrain.movement_penalty
-        
-        self.move(obstacles)
-        self.update_facing_direction()
 
     def update_facing_direction(self):
         # Update facing direction based on movement
@@ -167,8 +164,8 @@ class Player(pygame.sprite.Sprite):
             self.current_weapon_index = (self.current_weapon_index + 1) % len(self.weapons)
 
     def take_damage(self, amount):
-        if self.invulnerability_frames <= 0:
-            self.health -= amount
-            self.invulnerability_frames = INVULNERABILITY_FRAMES
-            if self.health <= 0:
-                self.kill() 
+        if self.invulnerable:
+            return
+        self.health -= amount
+        self.invulnerable = True
+        self.invulnerable_timer = 0 
